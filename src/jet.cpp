@@ -143,11 +143,8 @@ double ClusterSequence::jet_scale_for_algorithm(const PseudoJet & jet) const
 //   } else {throw Error("Unrecognised jet algorithm");}
 }
 
-
-
-
 template <class J> void ClusterSequence::bj_set_jetinfo(
-  const J * jetA, const int _jets_index) const 
+  J * jetA, const int _jets_index) const 
 {
     jetA->eta  = _jets[_jets_index].eta();
     jetA->phi  = _jets[_jets_index].phi();
@@ -158,16 +155,16 @@ template <class J> void ClusterSequence::bj_set_jetinfo(
     jetA->NN      = nullptr;
 }
 
-template <class J> void ClusterSequence::bj_set_jetinfo(
-  J &jetA, const int _jets_index) const 
-{
-    jetA.eta  = _jets[_jets_index].eta();
-    jetA.phi  = _jets[_jets_index].phi();
-    jetA.kt2  = jet_scale_for_algorithm(_jets[_jets_index]);
-    jetA._jets_index = _jets_index;
-    jetA.NN_dist = _R2;
-    jetA.NN      = nullptr;
-}
+// template <class J> void ClusterSequence::bj_set_jetinfo(
+//   J &jetA, const int _jets_index) const 
+// {
+//     jetA.eta  = _jets[_jets_index].eta();
+//     jetA.phi  = _jets[_jets_index].phi();
+//     jetA.kt2  = jet_scale_for_algorithm(_jets[_jets_index]);
+//     jetA._jets_index = _jets_index;
+//     jetA.NN_dist = _R2;
+//     jetA.NN      = nullptr;
+// }
 
 // distance between two jets from their phi and eta 
 //template <class J> inline double ClusterSequence::_bj_dist(
@@ -182,14 +179,15 @@ template <class J> double ClusterSequence::bj_dist(
   double deta = (jetA->eta - jetB->eta);
   return dphi*dphi + deta*deta;
 }
-template <class J> double ClusterSequence::bj_dist(
-  const J &jetA, const J &jetB) const {
-  double dphi = jetA.phi - jetB.phi;
-  double deta = (jetA.eta - jetB.eta);
-  dphi = (dphi < 0) ? -dphi : dphi;
-  dphi = (dphi > pi) ? twopi - dphi : dphi;
-  return dphi*dphi + deta*deta;
-}
+
+// template <class J> double ClusterSequence::bj_dist(
+//   const J &jetA, const J &jetB) const {
+//   double dphi = jetA.phi - jetB.phi;
+//   double deta = (jetA.eta - jetB.eta);
+//   dphi = (dphi < 0) ? -dphi : dphi;
+//   dphi = (dphi > pi) ? twopi - dphi : dphi;
+//   return dphi*dphi + deta*deta;
+// }
 
 // distance is either jet's kt2 value * either the NN's kt2 value 
 // times the NN_distance (which if object has no NN, is _R2)
@@ -202,12 +200,12 @@ template <class J> double ClusterSequence::bj_diJ(
   return jet->NN_dist * kt2;
 }
 
-template <class J> double ClusterSequence::bj_diJ(
-  const J &jet) const {
-  double kt2 = jet.kt2;
-  if (jet.NN != NULL) kt2 = (jet.NN->kt2 < kt2) ? jet.NN->kt2 : kt2;
-  return jet.NN_dist * kt2;
-}
+// template <class J> double ClusterSequence::bj_diJ(
+//   const J &jet) const {
+//   double kt2 = jet.kt2;
+//   if (jet.NN != NULL) kt2 = (jet.NN->kt2 < kt2) ? jet.NN->kt2 : kt2;
+//   return jet.NN_dist * kt2;
+// }
 
 // for a given jet input and head and tails of array
 // iterate over all jets between head and tail to calcaute 
@@ -222,7 +220,7 @@ template <class J> void ClusterSequence::bj_set_NN_nocross(
   J * NN  = NULL;
   if (head < jet) {
     for (J * jetB = head; jetB != jet; jetB++) {
-      double dist = _bj_dist(jet,jetB);
+      double dist = bj_dist(jet,jetB);
       if (dist < NN_dist) {
 	      NN_dist = dist;
 	      NN = jetB;
@@ -231,7 +229,7 @@ template <class J> void ClusterSequence::bj_set_NN_nocross(
   }
   if (tail > jet) {
     for (J * jetB = jet+1; jetB != tail; jetB++) {
-      double dist = _bj_dist(jet,jetB);
+      double dist = bj_dist(jet,jetB);
       if (dist < NN_dist) {
 	      NN_dist = dist;
 	      NN = jetB;
@@ -252,7 +250,7 @@ template <class J> void ClusterSequence::bj_set_NN_crosscheck(
   double NN_dist = _R2;
   J * NN  = NULL;
   for (J * jetB = head; jetB != tail; jetB++) {
-    double dist = _bj_dist(jet,jetB);
+    double dist = bj_dist(jet,jetB);
     if (dist < NN_dist) {
       NN_dist = dist;
       NN = jetB;
@@ -266,6 +264,29 @@ template <class J> void ClusterSequence::bj_set_NN_crosscheck(
   jet->NN_dist = NN_dist;
 }
 
+/// still working on adding in recombination 
+void ClusterSequence::do_ij_recombination_step(
+    const int & jet_i, const int & jet_j,
+    const double & dij,
+    int & newjet_k) 
+{
+    PseudoJet newjet(false);
+    _jet_def.recombiner()->recombine(_jets[jet_i], _jets[jet_j], newjet);
+    _jets.push_back(newjet);
+    newjet_k = _jets.size()-1;
+    int newstep_k = _history.size();
+    _jets[newjet_k].set_cluster_hist_index(newstep_k);
+    int hist_i = _jets[jet_i].cluster_hist_index();
+    int hist_j = _jets[jet_j].cluster_hist_index();
+    _add_step_to_history(newstep_k, std::min(hist_i, hist_j), std::max(hist_i,hist_j), newjet_k, dij);
+}
+void ClusterSequence::do_iB_recombination_step(
+    const int & jet_i, const double & diB) 
+{
+  int newstep_k = _history.size();
+  _add_step_to_history(newstep_k,_jets[jet_i].cluster_hist_index(),BeamJet, Invalid, diB);
+}
+
 
 // unit tests for ktjet clustering algorithm that scales as N^2
 template<class BJ> void ClusterSequence::simple_N2_cluster()
@@ -276,17 +297,20 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     // and set properties
     int n = _jets.size();
     std::vector<BJ> briefjets(n), briefjets_NN(n);
-    BJ * head = &briefjets[0], tail = &briefjets[n-1];
+    BJ * head = &briefjets[0], * tail = &briefjets[n-1];
     BJ *jetA, *jetB;
     std::vector<double> diJ(n);
     n=0;
     // loop over the briefjets and initialise
     #pragma omp parallel for \
     schedule(static) \
-    default(none) shared(briefjets) \
+    default(none) shared(briefjets, n) private(jetA) \
     num_threads(nthreads) \
     if (nthreads > 1) 
-    for (auto i=0;i<n;i++) ClusterSequence::bj_set_jetinfo(briefjets[i], i);
+    for (auto i=0;i<n;i++) {
+        jetA = &briefjets[i];
+        bj_set_jetinfo(jetA, i);
+    }
 
     // generate loop to produce a crosscheck and NN and NN distance 
     // for briefjet and other jets between head and itself. 
@@ -296,15 +320,18 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     // HOWEVER, since need to calculate distances between all possible pairs anyway
     // makes sense to actually just separate the distance calculations out from 
     // determining the NN and NN distances 
-    for (auto i=1;i<n;i++) ClusterSequence::bj_set_NN_crosscheck(&briefjets[i], head, &briefjets[i]);
+    for (auto i=1;i<n;i++) bj_set_NN_crosscheck(&briefjets[i], head, &briefjets[i]);
 
     // calculate distances of jet based on kt2 and NN_dist. 
     #pragma omp parallel for \
     schedule(static) \
-    default(none) shared(briefjets, diJ) \
+    default(none) shared(briefjets, diJ, n) private(jetA) \
     num_threads(nthreads) \
     if (nthreads > 1) 
-    for (auto i=0;i<n;i++) diJ[i] = ClusterSequence::bj_diJ(briefjets[i]); 
+    for (auto i=0;i<n;i++) {
+        jetA = &briefjets[i];
+        diJ[i] = bj_diJ(jetA);
+    } 
 
     // PJE still need to figure out what this is for history starts at the end (or tail)
     int history_location = n-1;
@@ -387,16 +414,16 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
             //@{
             int nn; // new jet index
             // PJE: what does this do?
-            ClusterSequence::do_ij_recombination_step(jetA->_jets_index, jetB->_jets_index, diJ_min, nn);
+            do_ij_recombination_step(jetA->_jets_index, jetB->_jets_index, diJ_min, nn);
             // PJE: what does this do?
-            ClusterSequence::bj_set_jetinfo(jetB, nn);
+            bj_set_jetinfo(jetB, nn);
             //@}
         } 
         //@}
         /// 3.2)
         //@{
         else {
-            ClusterSequence::do_iB_recombination_step(jetA->_jets_index, diJ_min);
+            do_iB_recombination_step(jetA->_jets_index, diJ_min);
         }
         //@}
         //@}
@@ -434,8 +461,8 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
             // computation of NN_no_cross and update the diJ array
             if (jetI->NN == jetA || jetI->NN == jetB) 
             {
-                ClusterSequence::bj_set_NN_nocross(jetI, head, tail);
-                diJ[jetI-head] = ClusterSequence::bj_diJ(jetI); // update diJ
+                bj_set_NN_nocross(jetI, head, tail);
+                diJ[jetI-head] = bj_diJ(jetI); // update diJ
             }
             //@}
 
@@ -444,11 +471,11 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
             // PJE: now if jetB is not null (jetB = briefjets[diJ_min_jet]->NN)
             // alter jetI and the diJ array 
             if (jetB != NULL && jetI != jetB) {
-                double dist = ClusterSequence::bj_dist(jetI,jetB);
+                double dist = bj_dist(jetI,jetB);
                 if (dist < jetI->NN_dist) {
                     jetI->NN_dist = dist;
                     jetI->NN = jetB;
-                    diJ[jetI-head] = ClusterSequence::bj_diJ(jetI); // update diJ...
+                    diJ[jetI-head] = bj_diJ(jetI); // update diJ...
                 }
                 // PJE: if dist is smaller update jetB NN list
                 if (dist < jetB->NN_dist) {
@@ -471,7 +498,7 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
         /// 6
         //@{
         // PJE: if jet B is not null, then update again the diJ array 
-        if (jetB != NULL) {diJ[jetB-head] = ClusterSequence::bj_diJ(jetB);}
+        if (jetB != NULL) {diJ[jetB-head] = bj_diJ(jetB);}
         //@}
     }
     // end of while loop 
@@ -486,5 +513,7 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     // delete[] diJ;
     // delete[] briefjets;
 }
+
+template void ClusterSequence::simple_N2_cluster<BriefJet>();
 
 }

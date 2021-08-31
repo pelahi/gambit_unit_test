@@ -102,8 +102,8 @@ public:
 
   template<class J> void simple_N2_cluster();
   double jet_scale_for_algorithm(const PseudoJet & jet) const ;
-  template <class J> void bj_set_jetinfo(const J * jeta, const int i) const;
-  template <class J> void bj_set_jetinfo(J &jeta, const int i) const;
+  template <class J> void bj_set_jetinfo(J * jeta, const int i) const;
+  // template <class J> void bj_set_jetinfo(J &jeta, const int i) const;
   void do_ij_recombination_step(
       const int & jet_i, const int & jet_j, 
       const double & dij, int & newjet_k
@@ -113,8 +113,8 @@ public:
   template <class J> double bj_dist(const J * const jeta, const J * const jetb) const;
   template <class J> double bj_diJ(const J * const jeta) const;
 
-  template <class J> double bj_dist(const J &jeta, const J &jetb) const;
-  template <class J> double bj_diJ(const J &jeta) const;
+  // template <class J> double bj_dist(const J &jeta, const J &jetb) const;
+  // template <class J> double bj_diJ(const J &jeta) const;
 
   template <class J> void bj_set_NN_nocross(J * const jeta,
     J * const head, const J * const tail) const;

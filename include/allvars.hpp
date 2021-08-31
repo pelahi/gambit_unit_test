@@ -22,5 +22,6 @@ const double ln2   = 0.693147180559945309417232121458176568076;
 #include <string>
 #include <valarray>
 #include <omp.h>
+#include <random>
 
 #endif

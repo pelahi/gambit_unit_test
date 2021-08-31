@@ -1,0 +1,2 @@
+bin/gambit_unit_test
+obj/*.o
