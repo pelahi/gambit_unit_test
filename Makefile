@@ -3,9 +3,10 @@ CPUTYPE ?= GNU
 # GPUTYPE = AMD
 GPUTYPE ?= NVIDIA
 OPTLEVEL ?= 2
-USEPROFILE ?= 0
+USEPROFILE ?= 1
 USEDEBUG ?= 0
-USEOPENMP ?=0
+USEOPENMP ?=1
+ARCH ?= native
 
 CC = gcc
 CXX = g++
@@ -96,16 +97,22 @@ ifeq ($(GPUTYPE), M1)
     OCL_FLAGS+=-I/opt/homebrew/include/ -L/opt/homebrew/lib/
 endif
 
-CXXFLAGS = -std=c++17 -O$(OPTLEVEL) -Iinclude/
+CXXFLAGS = -std=c++17 -O$(OPTLEVEL) -Iinclude/ -fopt-info-vec -fopt-info-vec-missed
+CXXFLAGS += -march=$(ARCH)
 ifeq ($(USEOPENMP), 1)
 	CXXFLAGS += -fopenmp
 endif
 ifeq ($(USEPROFILE), 1)
     CXXFLAGS += -pg -g 
 endif
+ifeq ($(USEPROFILE), 2)
+	LINKFLAGS += -L/group/pawsey0001/pelahi/codes/gambit-tests/topaz/gambit_unit_test -lmap-sampler-pmpi -lmap-sampler -Wl,--eh-frame-hdr -Wl,-rpath=/group/pawsey0001/pelahi/codes/gambit-tests/topaz/gambit_unit_test
+	CXXFLAGS += -g
+endif 
 ifeq ($(USEDEBUG), 1)
     CXXFLAGS += -g 
 endif
+CXXFLAGS += $(DEFFLAGS)
 
 
 BINDIR = $(shell pwd)/bin/
@@ -117,7 +124,7 @@ all: gambit_unit_test
 # explicit compilation
 
 gambit_unit_test: obj/main.o obj/jet.o obj/utils.o
-	$(CXX) $(CXXFLAGS) -o bin/gambit_unit_test obj/main.o obj/jet.o obj/utils.o
+	$(CXX) $(CXXFLAGS) $(LINKFLAGS) -o bin/gambit_unit_test obj/main.o obj/jet.o obj/utils.o
 
 
 obj/main.o : src/main.cpp include/allvars.hpp include/jet.hpp
