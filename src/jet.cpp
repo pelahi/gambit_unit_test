@@ -353,7 +353,9 @@ void ClusterSequence::do_iB_recombination_step(
 // unit tests for ktjet clustering algorithm that scales as N^2
 template<class BJ> void ClusterSequence::simple_N2_cluster()
 {
+#ifdef _OPENMP
     int nthreads = omp_get_max_threads();
+#endif
     //  allocate BJ jet class array
     // use jetA and jetB pointers to point to it 
     // and set properties
@@ -364,11 +366,13 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     std::vector<double> diJ(n);
     n=0;
     // loop over the briefjets and initialise
+#ifdef _OPENMP
     #pragma omp parallel for \
     schedule(static) \
     default(none) shared(briefjets, n) private(jetA) \
     num_threads(nthreads) \
-    if (nthreads > 1) 
+    if (nthreads > 1)
+#endif
     for (auto i=0;i<n;i++) {
         jetA = &briefjets[i];
         bj_set_jetinfo(jetA, i);
@@ -385,11 +389,13 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     for (auto i=1;i<n;i++) bj_set_NN_crosscheck(&briefjets[i], head, &briefjets[i]);
 
     // calculate distances of jet based on kt2 and NN_dist. 
+#ifdef _OPENMP
     #pragma omp parallel for \
     schedule(static) \
     default(none) shared(briefjets, diJ, n) private(jetA) \
     num_threads(nthreads) \
     if (nthreads > 1) 
+#endif
     for (auto i=0;i<n;i++) {
         jetA = &briefjets[i];
         diJ[i] = bj_diJ(jetA);
@@ -578,5 +584,22 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
 
 template void ClusterSequence::simple_N2_cluster<BriefJet>();
 
+void ClusterSequence::fill_initial_history () {
+  _jets.reserve(_jets.size()*2);
+  _history.reserve(_jets.size()*2);
+  _Qtot = 0;
+  for (int i = 0; i < static_cast<int>(_jets.size()) ; i++) {
+    history_element element(InexistentParent, InexistentParent, Invalid, 
+    i, 0.0, 0.0);
+    _history.push_back(element);
+    //_jet_def.recombiner()->preprocess(_jets[i]);
+    _jets[i].set_cluster_hist_index(i);
+    // _set_structure_shared_ptr(_jets[i]);
+    _Qtot += _jets[i].E();
+  }
+  // _initial_n = _jets.size();
+  // _deletes_self_when_unused = false;
+}
 
 }
+

@@ -17,6 +17,7 @@ int main() {
         auto E = sqrt(px*px+py*py+pz*pz+mass*mass);
         j = PseudoJet(px,py,pz,E);
     }
+    cs.fill_initial_history();
     cs.simple_N2_cluster<BriefJet>();
     return 0;
     

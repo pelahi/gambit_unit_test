@@ -123,6 +123,8 @@ public:
   };
   ~ClusterSequence () = default;
 
+  // initialize history based on _jets vector
+  void fill_initial_history();
 
   void add_step_to_history(const int & step_number, const int & parent1, const int & parent2, 
   const int & jetp_index, const double & dij);
@@ -156,6 +158,7 @@ public:
     int ihead, int itail) const;
   protected:
     // SharedPtr<PseudoJetStructureBase> _structure_shared_ptr; //< will actually be of type ClusterSequenceStructure
+    double _Qtot;
   private: 
     double _R2, _invR2;
     // inline double _wrap_rapidity(double x) {

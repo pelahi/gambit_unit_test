@@ -3,9 +3,12 @@ CPUTYPE ?= GNU
 # GPUTYPE = AMD
 GPUTYPE ?= NVIDIA
 OPTLEVEL ?= 2
+USEPROFILE ?= 0
+USEDEBUG ?= 0
+USEOPENMP ?=0
 
-CC = gcc-11
-CXX = g++-11
+CC = gcc
+CXX = g++
 CLANG = clang
 CLANGCXX = clang++
 AOMP = aompcc
@@ -93,8 +96,17 @@ ifeq ($(GPUTYPE), M1)
     OCL_FLAGS+=-I/opt/homebrew/include/ -L/opt/homebrew/lib/
 endif
 
-CFLAGS = -O$(OPTLEVEL) -D$(CALCTYPE) -D$(FUNCTYPE)
-CXXFLAGS = -std=c++17 -O$(OPTLEVEL) -Iinclude/ -fopenmp
+CXXFLAGS = -std=c++17 -O$(OPTLEVEL) -Iinclude/
+ifeq ($(USEOPENMP), 1)
+	CXXFLAGS += -fopenmp
+endif
+ifeq ($(USEPROFILE), 1)
+    CXXFLAGS += -pg -g 
+endif
+ifeq ($(USEDEBUG), 1)
+    CXXFLAGS += -g 
+endif
+
 
 BINDIR = $(shell pwd)/bin/
 SRCDIR = $(shell pwd)/src/
