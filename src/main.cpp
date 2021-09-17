@@ -5,6 +5,9 @@ using namespace std;
 using namespace jets;
 int main() {
     ClusterSequence cs;
+    TimeInfo ti;
+    ti.func = __func__;
+    MyGetTimeStart(ti, __LINE__);
     cs._jets.resize(100);
     std::default_random_engine generator;
     std::normal_distribution<double> normaldistrib(0.0,1.0);
@@ -18,6 +21,8 @@ int main() {
         j = PseudoJet(px,py,pz,E);
     }
     cs.fill_initial_history();
+    MyGetTimeEnd(ti, __LINE__);
+    ReportElapsedTime(ti);
     cs.simple_N2_cluster<BriefJet>();
     return 0;
     

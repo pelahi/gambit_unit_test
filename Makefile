@@ -116,8 +116,8 @@ all: gambit_unit_test
 
 # explicit compilation
 
-gambit_unit_test: obj/main.o obj/jet.o 
-	$(CXX) $(CXXFLAGS) -o bin/gambit_unit_test obj/main.o obj/jet.o 
+gambit_unit_test: obj/main.o obj/jet.o obj/utils.o
+	$(CXX) $(CXXFLAGS) -o bin/gambit_unit_test obj/main.o obj/jet.o obj/utils.o
 
 
 obj/main.o : src/main.cpp include/allvars.hpp include/jet.hpp
@@ -126,6 +126,8 @@ obj/main.o : src/main.cpp include/allvars.hpp include/jet.hpp
 obj/jet.o : src/jet.cpp include/allvars.hpp include/jet.hpp
 	$(CXX) $(CXXFLAGS) -c src/jet.cpp -o obj/jet.o
 
+obj/utils.o : src/utils.cpp include/allvars.hpp 
+	$(CXX) $(CXXFLAGS) -c src/utils.cpp -o obj/utils.o
 
 .PHONY: clean all gambit_unit_test
 

@@ -25,5 +25,23 @@ const int Invalid = -1;
 #include <omp.h>
 #include <random>
 #include <cassert>
+#include <chrono>
+#include <map>
+#include <sys/stat.h>
+#include <unistd.h>
 
+void GetMemUsage(std::string funcname, bool printreport);
+struct TimeInfo{
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> end;
+    int start_line, end_line;
+    double elapsed;
+    std::string func;
+};
+
+std::chrono::time_point<std::chrono::high_resolution_clock> MyGetTime();
+double MyElapsedTime(std::chrono::time_point<std::chrono::high_resolution_clock>  before);
+void MyGetTimeStart(TimeInfo &, int line);
+void MyGetTimeEnd(TimeInfo &, int line);
+void ReportElapsedTime(TimeInfo &ti);
 #endif

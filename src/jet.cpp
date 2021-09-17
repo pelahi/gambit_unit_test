@@ -353,6 +353,9 @@ void ClusterSequence::do_iB_recombination_step(
 // unit tests for ktjet clustering algorithm that scales as N^2
 template<class BJ> void ClusterSequence::simple_N2_cluster()
 {
+    TimeInfo ti;
+    ti.func = __func__;
+    MyGetTimeStart(ti, __LINE__);
 #ifdef _OPENMP
     int nthreads = omp_get_max_threads();
 #endif
@@ -580,6 +583,9 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     // // free memory 
     // delete[] diJ;
     // delete[] briefjets;
+
+    MyGetTimeEnd(ti, __LINE__);
+    ReportElapsedTime(ti);
 }
 
 template void ClusterSequence::simple_N2_cluster<BriefJet>();
