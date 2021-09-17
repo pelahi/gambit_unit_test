@@ -9,6 +9,7 @@ const double zeta2 = 1.644934066848226436472415166646025189219;
 const double zeta3 = 1.202056903159594285399738161511449990765;
 const double eulergamma = 0.577215664901532860606512090082402431042;
 const double ln2   = 0.693147180559945309417232121458176568076;
+const int Invalid = -1;
 
 #include <cstdio>
 #include <cstdlib>
@@ -23,5 +24,6 @@ const double ln2   = 0.693147180559945309417232121458176568076;
 #include <valarray>
 #include <omp.h>
 #include <random>
+#include <cassert>
 
 #endif

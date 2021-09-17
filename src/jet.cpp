@@ -3,13 +3,22 @@
 
 namespace jets {
 
+
 PseudoJet::PseudoJet(const double px_in, const double py_in, const double pz_in, const double E_in) {
   _E  = E_in ;
   _px = px_in;
   _py = py_in;
   _pz = pz_in;
+  _finish_init();
+  _reset_index();
+}
+void PseudoJet::_finish_init() const {
   _kt2 = _px * _px + _py * _py;
   _set_rap_phi();
+}
+void PseudoJet::_reset_index() const {
+    _user_index = -1;
+    _cluster_hist_index = -1;
 }
 void PseudoJet::_set_rap_phi() const {
     // set _phi
@@ -60,20 +69,23 @@ double PseudoJet::operator () (int i) const {
   }
   return 0.;
 }
-double PseudoJet::pseudorapidity() const {
+double PseudoJet::pseudorapidity() const 
+{
   if (_px == 0.0 && _py == 0.0) return MaxRap;
   if (_pz == 0.0) return 0.0;
   double theta = atan(perp()/_pz);
   if (theta < 0) theta += pi;
   return -log(tan(theta/2.0));
 }
-PseudoJet PseudoJet::operator+ (const PseudoJet & jet2) {
+PseudoJet PseudoJet::operator+ (const PseudoJet & jet2) 
+{
   return PseudoJet(_px+jet2._px,
 		   _py +jet2._py,
 		   _pz +jet2._pz,
 		   _E +jet2._E);
 }
-PseudoJet PseudoJet::operator-(const PseudoJet & jet2) {
+PseudoJet PseudoJet::operator-(const PseudoJet & jet2) 
+{
   return PseudoJet(_px-jet2._px,
 		   _py-jet2._py,
 		   _pz-jet2._pz,
@@ -119,6 +131,26 @@ bool PseudoJet::operator==(const PseudoJet & b) {
   return true;
 }
 
+void PseudoJet::recombine(const PseudoJet & pa, const PseudoJet & pb)
+{
+    _px = pa._px+pb._px;
+    _py = pa._py+pb._py;
+    _pz = pa._pz+pb._pz;
+    _E = pa._E+pb._E;
+    _finish_init();
+    _reset_index();
+}
+
+// PJE: structure shared ptr still needs to be implemented 
+void ClusterSequence::set_structure_shared_ptr(PseudoJet & j)
+{
+  // j.set_structure_shared_ptr(_structure_shared_ptr);
+  // update_structure_use_count();
+}
+void ClusterSequence::update_structure_use_count() 
+{
+  // _structure_use_count_after_construction = _structure_shared_ptr.use_count();
+}
 
 
 double ClusterSequence::jet_scale_for_algorithm(const PseudoJet & jet) const 
@@ -264,27 +296,57 @@ template <class J> void ClusterSequence::bj_set_NN_crosscheck(
   jet->NN_dist = NN_dist;
 }
 
-/// still working on adding in recombination 
+void ClusterSequence::add_step_to_history (
+    const int & step_number, 
+    const int & parent1, const int & parent2, const int & jetp_index,
+    const double & dij) 
+{
+    auto local_step = _history.size()-1;
+    auto cur_max_dij = std::max(dij,_history[local_step].max_dij_so_far);
+    history_element element(parent1, parent2, jetp_index, Invalid, dij, cur_max_dij);
+    _history.push_back(element);
+    local_step++;
+    assert(local_step == step_number);
+    assert(parent1 >= 0);
+    _history[parent1].child = local_step;
+    if (parent2 >= 0) _history[parent2].child = local_step;
+    if (jetp_index != Invalid) 
+    {
+        assert(jetp_index >= 0);
+        _jets[jetp_index].set_cluster_hist_index(local_step);
+        set_structure_shared_ptr(_jets[jetp_index]);
+    }
+#ifdef DEBUG
+    cout << local_step << ": "
+    << parent1 << " with " << parent2
+    << "; y = "<< dij<<endl;
+#endif
+}
+
+
+/// remcombine adds two jets together and adds this jet to 
+// the _jets vector and adjust the history of the ClusterSequence
 void ClusterSequence::do_ij_recombination_step(
     const int & jet_i, const int & jet_j,
     const double & dij,
     int & newjet_k) 
 {
-    PseudoJet newjet(false);
-    _jet_def.recombiner()->recombine(_jets[jet_i], _jets[jet_j], newjet);
+    PseudoJet newjet;
+    newjet.recombine(_jets[jet_i], _jets[jet_j]);
     _jets.push_back(newjet);
     newjet_k = _jets.size()-1;
     int newstep_k = _history.size();
     _jets[newjet_k].set_cluster_hist_index(newstep_k);
     int hist_i = _jets[jet_i].cluster_hist_index();
     int hist_j = _jets[jet_j].cluster_hist_index();
-    _add_step_to_history(newstep_k, std::min(hist_i, hist_j), std::max(hist_i,hist_j), newjet_k, dij);
+    add_step_to_history(newstep_k, std::min(hist_i, hist_j), std::max(hist_i,hist_j), newjet_k, dij);
 }
+// adjust the history of the cluster sequence 
 void ClusterSequence::do_iB_recombination_step(
     const int & jet_i, const double & diB) 
 {
   int newstep_k = _history.size();
-  _add_step_to_history(newstep_k,_jets[jet_i].cluster_hist_index(),BeamJet, Invalid, diB);
+  add_step_to_history(newstep_k, _jets[jet_i].cluster_hist_index(), BeamJet, Invalid, diB);
 }
 
 
@@ -515,5 +577,6 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
 }
 
 template void ClusterSequence::simple_N2_cluster<BriefJet>();
+
 
 }
