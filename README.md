@@ -1,12 +1,9 @@
 
 # Gambit Unit Tests
 
-================================================================================================
 ## developed by:
 
     Pascal Jahan Elahi
-
-================================================================================================
 
 ## Content
 
@@ -19,7 +16,6 @@ The repo contains the following directories
     shared/     contains shared sources
 
 
-================================================================================================
 
 ## Compiling (see documentation for more information)
 
@@ -29,7 +25,6 @@ Simply type
 
 Currently, edits to the Makefile are 
 
-================================================================================================
 
 ## Running (see documentation for more information)
 
@@ -37,5 +32,4 @@ Running is as simple as
 
     ./bin/gambit_unit_test
 
-================================================================================================
 
