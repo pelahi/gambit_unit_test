@@ -125,13 +125,15 @@ public:
 
   // initialize history based on _jets vector
   void fill_initial_history();
+  void OutputJets();
+  void OutputHistory();
 
   void add_step_to_history(const int & step_number, const int & parent1, const int & parent2, 
   const int & jetp_index, const double & dij);
   void set_structure_shared_ptr(PseudoJet & j); 
   void update_structure_use_count();
 
-  template<class J> void simple_N2_cluster();
+  template<class J> void simple_N2_cluster(bool verbose=false);
   double jet_scale_for_algorithm(const PseudoJet & jet) const ;
   template <class J> void bj_set_jetinfo(J * jeta, const int i) const;
   // template <class J> void bj_set_jetinfo(J &jeta, const int i) const;

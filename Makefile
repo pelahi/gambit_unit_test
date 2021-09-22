@@ -5,8 +5,9 @@ GPUTYPE ?= NVIDIA
 OPTLEVEL ?= 2
 USEPROFILE ?= 1
 USEDEBUG ?= 0
-USEOPENMP ?=1
+USEOPENMP ?= 1
 ARCH ?= native
+USEMPI ?= 0
 
 CC = gcc
 CXX = g++
@@ -100,7 +101,7 @@ endif
 CXXFLAGS = -std=c++17 -O$(OPTLEVEL) -Iinclude/ -fopt-info-vec -fopt-info-vec-missed
 CXXFLAGS += -march=$(ARCH)
 ifeq ($(USEOPENMP), 1)
-	CXXFLAGS += -fopenmp
+	CXXFLAGS += -fopenmp -DUSEOPENMP
 endif
 ifeq ($(USEPROFILE), 1)
     CXXFLAGS += -pg -g 
@@ -110,7 +111,7 @@ ifeq ($(USEPROFILE), 2)
 	CXXFLAGS += -g
 endif 
 ifeq ($(USEDEBUG), 1)
-    CXXFLAGS += -g 
+    CXXFLAGS += -g -DDEBUG
 endif
 CXXFLAGS += $(DEFFLAGS)
 

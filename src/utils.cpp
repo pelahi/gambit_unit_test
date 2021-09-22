@@ -1,5 +1,69 @@
 #include "allvars.hpp"
 
+void GetArgs(int argc, char *argv[], Options &opt)
+{
+#ifndef USEMPI
+    int ThisTask =0, NProcs =1;
+#endif
+    int option;
+    int NumArgs = 0;
+    while ((option = getopt(argc, argv, ":n:s:")) != EOF)
+    {
+        switch(option)
+        {
+            case 'n':
+                opt.njets = atoi(optarg);
+                NumArgs += 2;
+                break;
+            case 's':
+                opt.seed = atoll(optarg);
+                NumArgs += 2;
+                break;
+            case '?':
+                Usage();
+                break;
+        }
+    }
+#ifdef USEMPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+}
+
+void Usage()
+{
+    Options opt;
+    std::cout<<" Simple Gambit/Pythia/FastJet Unit test"<<std::endl;
+    std::cout<<" -n <number_of_jets> ["<<opt.njets<<"]"<<std::endl;
+    std::cout<<" -s <seed value> ["<<opt.seed<<"]"<<std::endl;
+    exit(9);
+}
+void Status(Options &opt){
+#ifdef USEMPI
+    if (ThisTask ==0)
+    {
+#endif
+    std::cout<<"-------------------"<<std::endl;
+    std::cout<<" Running code with :"<<std::endl;
+    std::cout<<"\t Number of jets :"<<opt.njets<<std::endl;
+    std::cout<<"-------------------"<<std::endl;
+#ifdef USEMPI
+    std::cout<<"-------------------"<<std::endl;
+    std::cout<<"Running with MPI. Number of mpi processes: "<<NProcs<<endl;
+    std::cout<<"-------------------"<<std::endl;
+#endif
+#ifdef USEOPENMP
+    std::cout<<"-------------------"<<std::endl;
+    std::cout<<"Running with OpenMP. Number of openmp threads: "<<omp_get_max_threads()<<std::endl;
+    std::cout<<"Running with OpenMP version "<< _OPENMP <<std::endl;
+    std::cout<<"-------------------"<<std::endl;
+#endif
+#ifdef USEMPI
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+}
+
+
 /// get the memory use looking at the task
 void GetMemUsage(std::string funcname, bool printreport){
 #ifndef USEMPI

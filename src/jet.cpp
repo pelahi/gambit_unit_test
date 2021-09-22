@@ -317,9 +317,9 @@ void ClusterSequence::add_step_to_history (
         set_structure_shared_ptr(_jets[jetp_index]);
     }
 #ifdef DEBUG
-    cout << local_step << ": "
+    std::cout << local_step << ": "
     << parent1 << " with " << parent2
-    << "; y = "<< dij<<endl;
+    << "; y = "<< dij<<std::endl;
 #endif
 }
 
@@ -351,12 +351,12 @@ void ClusterSequence::do_iB_recombination_step(
 
 
 // unit tests for ktjet clustering algorithm that scales as N^2
-template<class BJ> void ClusterSequence::simple_N2_cluster()
+template<class BJ> void ClusterSequence::simple_N2_cluster(bool verbose)
 {
     TimeInfo ti;
     ti.func = __func__;
     MyGetTimeStart(ti, __LINE__);
-#ifdef _OPENMP
+#ifdef USEOPENMP
     int nthreads = omp_get_max_threads();
 #endif
     //  allocate BJ jet class array
@@ -367,9 +367,8 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     BJ * head = &briefjets[0], * tail = &briefjets[n-1];
     BJ *jetA, *jetB;
     std::vector<double> diJ(n);
-    n=0;
     // loop over the briefjets and initialise
-#ifdef _OPENMP
+#ifdef USEOPENMP
     #pragma omp parallel for \
     schedule(static) \
     default(none) shared(briefjets, n) private(jetA) \
@@ -380,6 +379,14 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
         jetA = &briefjets[i];
         bj_set_jetinfo(jetA, i);
     }
+    if (verbose) {
+      std::cout<<__func__<<" : "<<__LINE__<<" initialized briefjets "<<std::endl;
+      for (auto &bj:briefjets) {
+        std::cout<<bj.eta<<" "<<bj.phi<<" "<<bj.kt2<<" "<<bj.NN_dist<<" "<<bj._jets_index<<" "<<bj.NN<<std::endl;
+      }
+      std::cout<<"----------------------------"<<std::endl;
+    }
+    
 
     // generate loop to produce a crosscheck and NN and NN distance 
     // for briefjet and other jets between head and itself. 
@@ -392,7 +399,7 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     for (auto i=1;i<n;i++) bj_set_NN_crosscheck(&briefjets[i], head, &briefjets[i]);
 
     // calculate distances of jet based on kt2 and NN_dist. 
-#ifdef _OPENMP
+#ifdef USEOPENMP
     #pragma omp parallel for \
     schedule(static) \
     default(none) shared(briefjets, diJ, n) private(jetA) \
@@ -459,7 +466,7 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
         history_location++;
         // select minimum jet
         jetA = & briefjets[diJ_min_jet];
-        // PJE: what does NN do? 
+        // get the NN jet of jetA
         jetB = static_cast<BJ *>(jetA->NN);
         // PJE: why multiple temporary variable by _invR2? what is _invR2?
         diJ_min *= _invR2;
@@ -469,7 +476,7 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
         //@{
         /// 3.1) 
         //@{
-        // PJE: if jetB which is min jet's NN is NULL 
+        // PJE: if jetB which is min jetA's NN is NULL 
         // call _do_iB_recombination_setp
         // otherwise some some more preliminary calculations 
         if (jetB != NULL) {
@@ -580,6 +587,15 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     // for almost all combinations of jetA and jetB. 
     // thus it might be useful to just calculate all pairs on GPU 
 
+    if (verbose) 
+    {
+      std::cout<<__func__<<" : "<<__LINE__<<" after processing briefjets "<<std::endl;
+      for (auto &bj:briefjets) {
+        std::cout<<bj.eta<<" "<<bj.phi<<" "<<bj.kt2<<" "<<bj.NN_dist<<" "<<bj._jets_index<<" "<<bj.NN<<std::endl;
+      }
+      std::cout<<"----------------------------"<<std::endl;
+    }
+
     // // free memory 
     // delete[] diJ;
     // delete[] briefjets;
@@ -588,7 +604,7 @@ template<class BJ> void ClusterSequence::simple_N2_cluster()
     ReportElapsedTime(ti);
 }
 
-template void ClusterSequence::simple_N2_cluster<BriefJet>();
+template void ClusterSequence::simple_N2_cluster<BriefJet>(bool verbose);
 
 void ClusterSequence::fill_initial_history () {
   _jets.reserve(_jets.size()*2);
@@ -605,6 +621,24 @@ void ClusterSequence::fill_initial_history () {
   }
   // _initial_n = _jets.size();
   // _deletes_self_when_unused = false;
+}
+
+void ClusterSequence::OutputJets() {
+  std::cout<<" Cluster Sequence jet state"<<std::endl;
+  for (auto &j:_jets) {
+    std::cout<<j.px()<<" "<<j.py()<<" "<<j.pz()<<" "<<j.E()<<" "<<j.phi()<<" "<<j.eta()<<" "<<j.cluster_hist_index()<<" "<<j.user_index()<<std::endl;
+  }
+  std::cout<<"-----------------------------"<<std::endl;
+}
+
+void ClusterSequence::OutputHistory() {
+  std::cout<<" Cluster Sequence History state"<<std::endl;
+  int counter = 0;
+  for (auto &h:_history) {
+    std::cout<<++counter<<" "<<h.parent1<<" "<<h.parent2<<" "<<h.child<<" "<<h.jetp_index<<" "<<h.dij<<" "<<h.max_dij_so_far<<std::endl;
+  }
+  std::cout<<"-----------------------------"<<std::endl;
+
 }
 
 }

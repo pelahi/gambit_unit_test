@@ -22,13 +22,20 @@ const int Invalid = -1;
 #include <algorithm>
 #include <string>
 #include <valarray>
-#include <omp.h>
 #include <random>
 #include <cassert>
 #include <chrono>
 #include <map>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifdef USEOPENMP
+#include <omp.h>
+#endif
+
+#ifdef USEMPI
+#include <mpi.h>
+#endif
 
 void GetMemUsage(std::string funcname, bool printreport);
 struct TimeInfo{
@@ -44,4 +51,19 @@ double MyElapsedTime(std::chrono::time_point<std::chrono::high_resolution_clock>
 void MyGetTimeStart(TimeInfo &, int line);
 void MyGetTimeEnd(TimeInfo &, int line);
 void ReportElapsedTime(TimeInfo &ti);
+
+class Options
+{
+    public:
+    int njets;
+    unsigned long long seed;
+    Options(){
+        njets = 100;
+        seed = 1234567890987654321ull;
+    };
+};
+
+void GetArgs(int argc, char *argv[], Options &opt);
+void Usage();
+void Status(Options &opt);
 #endif
