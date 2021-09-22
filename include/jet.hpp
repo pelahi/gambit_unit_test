@@ -158,6 +158,10 @@ public:
     int ihead, int itail) const;
   template <class J> void bj_set_NN_crosscheck(J &jeta,
     int ihead, int itail) const;
+
+  // calculate all distances 
+  template <class J> std::vector<double> dij_all(std::vector<J> &jets);
+
   protected:
     // SharedPtr<PseudoJetStructureBase> _structure_shared_ptr; //< will actually be of type ClusterSequenceStructure
     double _Qtot;

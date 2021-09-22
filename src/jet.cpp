@@ -296,6 +296,40 @@ template <class J> void ClusterSequence::bj_set_NN_crosscheck(
   jet->NN_dist = NN_dist;
 }
 
+template <class J> std::vector<double> ClusterSequence::dij_all(std::vector<J> &jets)
+{
+  TimeInfo ti;
+  ti.func = __func__;
+  MyGetTimeStart(ti, __LINE__);
+  auto n = _jets.size();
+  auto n2 = n*n;
+  std::vector<double> alldistpairs(n2);
+  J * jetA, *jetB;
+#ifdef USEOPENMP
+    int nthreads = omp_get_max_threads();
+    #pragma omp parallel for \
+    schedule(static) \
+    default(none) shared(alldistpairs, n, jets) private(jetA, jetB)\
+    num_threads(nthreads) \
+    if (nthreads > 1)
+#endif
+  for (auto i=0;i<n;i++) {
+    for (auto j=i+1;j<n;j++) {
+      jetA = &jets[i];
+      jetB = &jets[j];
+      alldistpairs[i*n+j] = bj_dist(jetA,jetB);
+    }
+  }
+  for (auto i=0;i<n;i++) {
+    for (auto j=i+1;j<n;j++) {
+      alldistpairs[j*n+i] = alldistpairs[i*n+j];
+    }
+  }
+  MyGetTimeEnd(ti, __LINE__);
+  ReportElapsedTime(ti);
+  return alldistpairs;
+}
+
 void ClusterSequence::add_step_to_history (
     const int & step_number, 
     const int & parent1, const int & parent2, const int & jetp_index,
@@ -386,7 +420,10 @@ template<class BJ> void ClusterSequence::simple_N2_cluster(bool verbose)
       }
       std::cout<<"----------------------------"<<std::endl;
     }
-    
+
+    // get all the distances     
+    std::vector<double> dij_all_vec = dij_all(briefjets);
+
 
     // generate loop to produce a crosscheck and NN and NN distance 
     // for briefjet and other jets between head and itself. 
@@ -410,6 +447,8 @@ template<class BJ> void ClusterSequence::simple_N2_cluster(bool verbose)
         jetA = &briefjets[i];
         diJ[i] = bj_diJ(jetA);
     } 
+
+
 
     // PJE still need to figure out what this is for history starts at the end (or tail)
     int history_location = n-1;
